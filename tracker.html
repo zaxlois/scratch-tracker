@@ -1,0 +1,544 @@
+<!DOCTYPE html>
+<html lang="el">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0" />
+  <title>OPAP Scratch Tracker</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      min-height: 100vh;
+      background: #0f1117;
+      color: #e8e4d9;
+      font-family: Georgia, 'Times New Roman', serif;
+      padding-bottom: 60px;
+    }
+
+    .header {
+      background: linear-gradient(135deg, #1a1f2e 0%, #0f1117 100%);
+      border-bottom: 2px solid #c9a84c;
+      padding: 24px 20px 16px;
+      text-align: center;
+      position: sticky;
+      top: 0;
+      z-index: 10;
+    }
+    .header-label { font-size: 11px; letter-spacing: 4px; color: #c9a84c; text-transform: uppercase; margin-bottom: 6px; }
+    .header-title { font-size: 24px; font-weight: bold; }
+    .header-sub { font-size: 12px; color: #7a7060; margin-top: 4px; }
+
+    .content { max-width: 480px; margin: 0 auto; padding: 0 16px; }
+
+    .section-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin: 28px 0 14px;
+    }
+    .section-label { font-size: 12px; letter-spacing: 3px; color: #c9a84c; text-transform: uppercase; }
+
+    .btn-outline {
+      background: none;
+      border: 1px solid #c9a84c;
+      color: #c9a84c;
+      border-radius: 6px;
+      padding: 5px 14px;
+      font-size: 12px;
+      cursor: pointer;
+      font-family: inherit;
+      letter-spacing: 1px;
+    }
+    .btn-primary {
+      background: #c9a84c;
+      border: none;
+      border-radius: 8px;
+      color: #0f1117;
+      padding: 9px 18px;
+      font-size: 13px;
+      font-weight: bold;
+      cursor: pointer;
+      font-family: inherit;
+      white-space: nowrap;
+    }
+    .btn-delete {
+      background: none;
+      border: none;
+      color: #5a3535;
+      cursor: pointer;
+      font-size: 11px;
+      font-family: inherit;
+      padding: 0;
+      margin-top: 6px;
+      display: block;
+    }
+    .btn-clear {
+      width: 100%;
+      margin-top: 20px;
+      padding: 16px;
+      background: #1a1f2e;
+      border: 1px solid #3a2020;
+      border-radius: 12px;
+      color: #6a4040;
+      font-size: 13px;
+      letter-spacing: 2px;
+      cursor: pointer;
+      font-family: inherit;
+      text-transform: uppercase;
+      transition: all 0.3s;
+    }
+    .btn-clear.cleared { background: #1a3020; border-color: #2a6040; color: #4a9060; }
+    .btn-clear-note { font-size: 11px; color: #3a3530; text-align: center; margin-top: 8px; }
+
+    .add-form {
+      background: #1a1f2e;
+      border: 1px solid #2a3040;
+      border-radius: 10px;
+      padding: 14px;
+      margin-bottom: 14px;
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      align-items: center;
+    }
+
+    input[type="text"], input[type="number"] {
+      background: #0f1117;
+      border: 1px solid #2a3040;
+      border-radius: 8px;
+      color: #e8e4d9;
+      padding: 9px 12px;
+      font-size: 14px;
+      font-family: inherit;
+      outline: none;
+      width: 100%;
+    }
+    input[type="number"].over-limit {
+      border-color: #8b2020;
+      background: #1a0f0f;
+    }
+    input::placeholder { color: #3a4050; }
+
+    /* SCRATCH CARD */
+    .card {
+      background: #1a1f2e;
+      border: 1px solid #2a3040;
+      border-radius: 12px;
+      padding: 14px 16px;
+      margin-bottom: 10px;
+    }
+
+    .card-top {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 12px;
+    }
+
+    .card-badge {
+      background: #c9a84c;
+      color: #0f1117;
+      border-radius: 8px;
+      width: 46px;
+      height: 46px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: bold;
+      font-size: 13px;
+      flex-shrink: 0;
+      text-align: center;
+    }
+
+    .card-info { flex: 1; }
+    .card-name { font-size: 15px; font-weight: bold; color: #e8e4d9; }
+    .card-meta { font-size: 11px; color: #7a7060; margin-top: 2px; }
+
+    .card-sold-value {
+      text-align: right;
+      flex-shrink: 0;
+    }
+    .card-sold-label { font-size: 10px; color: #7a7060; text-transform: uppercase; letter-spacing: 1px; }
+    .card-sold-amount { font-size: 18px; font-weight: bold; color: #c9a84c; }
+    .card-sold-amount.zero { color: #3a4050; }
+
+    .card-bottom {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .card-input-wrap { flex: 1; }
+    .card-input-label { font-size: 11px; color: #7a7060; margin-bottom: 5px; }
+    .card-input-hint { font-size: 10px; margin-top: 4px; color: #5a6070; }
+    .card-input-hint.warn { color: #8b3020; }
+
+    .card-breakdown {
+      font-size: 11px;
+      color: #5a6070;
+      text-align: right;
+      flex-shrink: 0;
+      line-height: 1.7;
+    }
+    .card-breakdown span { display: block; }
+
+    /* FIXED FIELD CARD */
+    .fixed-card {
+      background: #1a1f2e;
+      border: 1px solid #2a3040;
+      border-radius: 12px;
+      padding: 14px 16px;
+      margin-bottom: 10px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .fixed-card-body { flex: 1; }
+    .fixed-card-label { font-size: 12px; color: #9a8f7a; margin-bottom: 6px; }
+    .fixed-card-right { text-align: right; flex-shrink: 0; }
+    .fixed-card-value { font-size: 16px; font-weight: bold; }
+
+    .subtotal {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-top: 14px;
+      padding: 12px 16px;
+      background: #141820;
+      border-radius: 10px;
+      border: 1px solid #2a3040;
+    }
+    .subtotal-label { color: #7a7060; font-size: 13px; }
+    .subtotal-value { font-size: 18px; font-weight: bold; }
+
+    .grand-total {
+      margin-top: 28px;
+      background: linear-gradient(135deg, #c9a84c 0%, #a07830 100%);
+      border-radius: 16px;
+      padding: 20px 24px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .grand-total-label { font-size: 11px; letter-spacing: 3px; color: #5a3a10; text-transform: uppercase; }
+    .grand-total-sub { font-size: 11px; color: #7a5020; margin-top: 2px; }
+    .grand-total-value { font-size: 32px; font-weight: bold; color: #0f1117; }
+  </style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-label">OPAP Store</div>
+  <div class="header-title">Καταμέτρηση Scratch</div>
+  <div class="header-sub">Αξία πακέτου = 300€ ανά τύπο</div>
+</div>
+
+<div class="content">
+
+  <!-- SCRATCH CARDS -->
+  <div class="section-header">
+    <div class="section-label">Scratch Cards</div>
+    <button class="btn-outline" onclick="toggleAddType()">+ Νέος Τύπος</button>
+  </div>
+
+  <div class="add-form" id="addTypeForm" style="display:none;">
+    <input type="text" id="newTypeName" placeholder="Όνομα (π.χ. Χρυσός)" style="flex:1;min-width:120px;" />
+    <input type="number" id="newTypeValue" placeholder="Αξία €" style="width:90px;" />
+    <button class="btn-primary" onclick="addScratchType()">Προσθήκη</button>
+  </div>
+
+  <div id="scratchList"></div>
+
+  <div class="subtotal">
+    <span class="subtotal-label">Σύνολο Scratch (αξία αποθέματος)</span>
+    <span class="subtotal-value" style="color:#c9a84c;" id="scratchTotal">0,00 €</span>
+  </div>
+
+  <!-- FIXED FIELDS -->
+  <div class="section-header">
+    <div class="section-label">Λοιπά Πεδία</div>
+    <button class="btn-outline" onclick="toggleAddField()">+ Νέο Πεδίο</button>
+  </div>
+
+  <div class="add-form" id="addFieldForm" style="display:none;">
+    <input type="text" id="newFieldLabel" placeholder="Όνομα πεδίου" style="flex:1;" />
+    <button class="btn-primary" onclick="addFixedField()">Προσθήκη</button>
+  </div>
+
+  <div id="fixedList"></div>
+
+  <div class="subtotal">
+    <span class="subtotal-label">Σύνολο Λοιπών</span>
+    <span class="subtotal-value" id="fixedTotal">0,00 €</span>
+  </div>
+
+  <!-- GRAND TOTAL -->
+  <div class="grand-total">
+    <div>
+      <div class="grand-total-label">Γενικό Σύνολο</div>
+      <div class="grand-total-sub">Scratch + Λοιπά</div>
+    </div>
+    <div class="grand-total-value" id="grandTotal">0,00 €</div>
+  </div>
+
+  <button class="btn-clear" id="clearBtn" onclick="clearValues()">Καθαρισμός Τιμών</button>
+  <div class="btn-clear-note">Διαγράφει μόνο τις τιμές — οι τύποι παραμένουν</div>
+
+</div>
+
+<script>
+  const PACK = 300;
+  const KEY = "opap_data_v6";
+
+  let state = loadState();
+
+  function loadState() {
+    try {
+      const raw = localStorage.getItem(KEY);
+      if (raw) return JSON.parse(raw);
+    } catch {}
+    return {
+      scratchTypes: [
+        { id: 1, name: "Scratch 1€", faceValue: 1 },
+        { id: 2, name: "Scratch 2€", faceValue: 2 },
+        { id: 3, name: "Scratch 3€", faceValue: 3 },
+        { id: 5, name: "Scratch 5€", faceValue: 5 },
+      ],
+      remaining: {},
+      fixedFields: [
+        { id: 1, label: "Μετρητά Ταμείου", value: "" }
+      ]
+    };
+  }
+
+  function saveState() {
+    localStorage.setItem(KEY, JSON.stringify(state));
+  }
+
+  function fmt(n) {
+    return n.toLocaleString("el-GR", { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + " €";
+  }
+
+  function getPieces(faceValue) {
+    return Math.floor(PACK / faceValue);
+  }
+
+  function calcSoldValue(ticketNum, faceValue) {
+    return PACK - (ticketNum * faceValue);
+  }
+
+  // ── INITIAL RENDER (builds DOM once) ──────────────────────────────────────
+
+  function render() {
+    renderScratch();
+    renderFixed();
+    updateTotals();
+  }
+
+  function renderScratch() {
+    const sl = document.getElementById("scratchList");
+    sl.innerHTML = "";
+    state.scratchTypes.forEach(t => {
+      const totalPieces = getPieces(t.faceValue);
+      const maxTicket = totalPieces - 1;
+      const remRaw = state.remaining[t.id] ?? "";
+      const card = document.createElement("div");
+      card.className = "card";
+      card.id = "card-" + t.id;
+      card.innerHTML = `
+        <div class="card-top">
+          <div class="card-badge">${t.faceValue}€</div>
+          <div class="card-info">
+            <div class="card-name">${t.name}</div>
+            <div class="card-meta">Αξία: ${t.faceValue}€ / τεμ. &nbsp;|&nbsp; Τεμάχια: ${totalPieces} (αρ. 0 – ${maxTicket})</div>
+          </div>
+          <div class="card-sold-value">
+            <div class="card-sold-label">Απομένουν</div>
+            <div class="card-sold-amount zero" id="sold-${t.id}">0,00 €</div>
+          </div>
+        </div>
+        <div class="card-bottom">
+          <div class="card-input-wrap">
+            <div class="card-input-label">Αριθμός τεμαχίου στον πάγκο</div>
+            <input
+              type="number"
+              id="input-${t.id}"
+              min="0"
+              max="${maxTicket}"
+              placeholder="0 – ${maxTicket}"
+              value="${remRaw}"
+              oninput="onScratchInput(${t.id}, this, ${maxTicket})"
+            />
+            <div class="card-input-hint" id="hint-${t.id}">Εύρος αριθμού: 0 – ${maxTicket}</div>
+          </div>
+          <div class="card-breakdown" id="breakdown-${t.id}">
+            <span style="color:#5a6070;">Τύπος:</span>
+            <span id="formula-${t.id}">—</span>
+            <span style="color:#c9a84c;margin-top:2px;" id="result-${t.id}">—</span>
+            <button class="btn-delete" onclick="removeScratchType(${t.id})">✕ Διαγραφή</button>
+          </div>
+        </div>
+      `;
+      sl.appendChild(card);
+      // Update display for pre-existing value
+      updateScratchCard(t.id, t.faceValue, maxTicket);
+    });
+  }
+
+  function renderFixed() {
+    const fl = document.getElementById("fixedList");
+    fl.innerHTML = "";
+    state.fixedFields.forEach(f => {
+      const card = document.createElement("div");
+      card.className = "fixed-card";
+      card.innerHTML = `
+        <div class="fixed-card-body">
+          <div class="fixed-card-label">${f.label}</div>
+          <input type="number" id="fixed-${f.id}" placeholder="0.00 €" value="${f.value}"
+            oninput="onFixedInput(${f.id}, this.value)" style="font-size:15px;" />
+        </div>
+        <div class="fixed-card-right">
+          <div class="fixed-card-value" id="fixedval-${f.id}" style="color:${parseFloat(f.value) > 0 ? '#e8e4d9' : '#3a4050'}">${fmt(parseFloat(f.value)||0)}</div>
+          <button class="btn-delete" onclick="removeFixedField(${f.id})">✕ Διαγραφή</button>
+        </div>
+      `;
+      fl.appendChild(card);
+    });
+  }
+
+  // ── TARGETED UPDATES (no re-render) ───────────────────────────────────────
+
+  function onScratchInput(id, input, maxTicket) {
+    let val = parseFloat(input.value);
+    if (!isNaN(val) && val > maxTicket) { val = maxTicket; input.value = maxTicket; }
+    if (!isNaN(val) && val < 0)         { val = 0;         input.value = 0; }
+    state.remaining[id] = input.value;
+    saveState();
+    const t = state.scratchTypes.find(x => x.id === id);
+    updateScratchCard(id, t.faceValue, maxTicket);
+    updateTotals();
+  }
+
+  function updateScratchCard(id, faceValue, maxTicket) {
+    const remRaw = state.remaining[id] ?? "";
+    const ticketNum = parseFloat(remRaw);
+    const hasValue = remRaw !== "" && !isNaN(ticketNum);
+    const invalid = hasValue && (ticketNum < 0 || ticketNum > maxTicket);
+    const soldValue = (hasValue && !invalid) ? calcSoldValue(ticketNum, faceValue) : 0;
+
+    const soldEl = document.getElementById("sold-" + id);
+    const hintEl = document.getElementById("hint-" + id);
+    const formulaEl = document.getElementById("formula-" + id);
+    const resultEl = document.getElementById("result-" + id);
+    const inputEl = document.getElementById("input-" + id);
+
+    if (soldEl) {
+      soldEl.textContent = fmt(soldValue);
+      soldEl.className = "card-sold-amount" + (!hasValue || soldValue === 0 ? " zero" : "");
+    }
+    if (hintEl) {
+      hintEl.textContent = invalid ? `⚠ Εύρος: 0 – ${maxTicket}` : `Εύρος αριθμού: 0 – ${maxTicket}`;
+      hintEl.className = "card-input-hint" + (invalid ? " warn" : "");
+    }
+    if (formulaEl) formulaEl.textContent = (hasValue && !invalid) ? `300€ − (${ticketNum} × ${faceValue}€)` : "—";
+    if (resultEl)  resultEl.textContent  = (hasValue && !invalid) ? fmt(soldValue) : "—";
+    if (inputEl)   inputEl.className = invalid ? "over-limit" : "";
+  }
+
+  function onFixedInput(id, val) {
+    const f = state.fixedFields.find(x => x.id === id);
+    if (f) f.value = val;
+    saveState();
+    const n = parseFloat(val) || 0;
+    const el = document.getElementById("fixedval-" + id);
+    if (el) { el.textContent = fmt(n); el.style.color = n > 0 ? "#e8e4d9" : "#3a4050"; }
+    updateTotals();
+  }
+
+  function updateTotals() {
+    let scratchSum = 0;
+    state.scratchTypes.forEach(t => {
+      const remRaw = state.remaining[t.id] ?? "";
+      const ticketNum = parseFloat(remRaw);
+      const maxTicket = getPieces(t.faceValue) - 1;
+      if (remRaw !== "" && !isNaN(ticketNum) && ticketNum >= 0 && ticketNum <= maxTicket) {
+        scratchSum += calcSoldValue(ticketNum, t.faceValue);
+      }
+    });
+    let fixedSum = 0;
+    state.fixedFields.forEach(f => { fixedSum += parseFloat(f.value) || 0; });
+
+    document.getElementById("scratchTotal").textContent = fmt(scratchSum);
+    document.getElementById("fixedTotal").textContent = fmt(fixedSum);
+    document.getElementById("grandTotal").textContent = fmt(scratchSum + fixedSum);
+  }
+
+  // ── ADD / REMOVE ───────────────────────────────────────────────────────────
+
+  function toggleAddType() {
+    const f = document.getElementById("addTypeForm");
+    f.style.display = f.style.display === "none" ? "flex" : "none";
+  }
+
+  function toggleAddField() {
+    const f = document.getElementById("addFieldForm");
+    f.style.display = f.style.display === "none" ? "flex" : "none";
+  }
+
+  function addScratchType() {
+    const name = document.getElementById("newTypeName").value.trim();
+    const val = parseFloat(document.getElementById("newTypeValue").value);
+    if (!name || isNaN(val) || val <= 0) return;
+    state.scratchTypes.push({ id: Date.now(), name, faceValue: val });
+    document.getElementById("newTypeName").value = "";
+    document.getElementById("newTypeValue").value = "";
+    document.getElementById("addTypeForm").style.display = "none";
+    renderScratch();
+    updateTotals();
+    saveState();
+  }
+
+  function removeScratchType(id) {
+    state.scratchTypes = state.scratchTypes.filter(t => t.id !== id);
+    delete state.remaining[id];
+    renderScratch();
+    updateTotals();
+    saveState();
+  }
+
+  function addFixedField() {
+    const label = document.getElementById("newFieldLabel").value.trim();
+    if (!label) return;
+    state.fixedFields.push({ id: Date.now(), label, value: "" });
+    document.getElementById("newFieldLabel").value = "";
+    document.getElementById("addFieldForm").style.display = "none";
+    renderFixed();
+    updateTotals();
+    saveState();
+  }
+
+  function removeFixedField(id) {
+    state.fixedFields = state.fixedFields.filter(f => f.id !== id);
+    renderFixed();
+    updateTotals();
+    saveState();
+  }
+
+  function clearValues() {
+    state.remaining = {};
+    state.fixedFields = state.fixedFields.map(f => ({ ...f, value: "" }));
+    saveState();
+    render();
+    const btn = document.getElementById("clearBtn");
+    btn.textContent = "✓ Καθαρίστηκε";
+    btn.classList.add("cleared");
+    setTimeout(() => {
+      btn.textContent = "Καθαρισμός Τιμών";
+      btn.classList.remove("cleared");
+    }, 1500);
+  }
+
+  render();
+</script>
+</body>
+</html>
