@@ -288,7 +288,7 @@
 
 <script>
   const PACK = 300;
-  const KEY = "opap_data_v6";
+  const KEY = "opap_data_v8";
 
   let state = loadState();
 
@@ -360,15 +360,22 @@
         <div class="card-bottom">
           <div class="card-input-wrap">
             <div class="card-input-label">Αριθμός τεμαχίου στον πάγκο</div>
-            <input
-              type="number"
-              id="input-${t.id}"
-              min="0"
-              max="${maxTicket}"
-              placeholder="0 – ${maxTicket}"
-              value="${remRaw}"
-              oninput="onScratchInput(${t.id}, this, ${maxTicket})"
-            />
+            <div style="display:flex;align-items:center;gap:8px;margin-top:4px;">
+              <button onclick="stepScratch(${t.id}, -1, ${maxTicket})" style="width:46px;height:46px;border-radius:10px;border:1px solid #2a3040;background:#0f1117;color:#e8e4d9;font-size:24px;cursor:pointer;flex-shrink:0;display:flex;align-items:center;justify-content:center;">−</button>
+              <input
+                type="number"
+                id="input-${t.id}"
+                min="0"
+                max="${maxTicket}"
+                placeholder="0–${maxTicket}"
+                value="${remRaw}"
+                inputmode="numeric"
+                pattern="[0-9]*"
+                style="flex:1;text-align:center;font-size:20px;font-weight:bold;background:#0f1117;border:1px solid #2a3040;border-radius:10px;color:#e8e4d9;padding:8px 4px;font-family:inherit;outline:none;"
+                oninput="onScratchInput(${t.id}, this, ${maxTicket})"
+              />
+              <button onclick="stepScratch(${t.id}, 1, ${maxTicket})" style="width:46px;height:46px;border-radius:10px;border:1px solid #2a3040;background:#0f1117;color:#e8e4d9;font-size:24px;cursor:pointer;flex-shrink:0;display:flex;align-items:center;justify-content:center;">+</button>
+            </div>
             <div class="card-input-hint" id="hint-${t.id}">Εύρος αριθμού: 0 – ${maxTicket}</div>
           </div>
           <div class="card-breakdown" id="breakdown-${t.id}">
@@ -409,10 +416,30 @@
   // ── TARGETED UPDATES (no re-render) ───────────────────────────────────────
 
   function onScratchInput(id, input, maxTicket) {
-    let val = parseFloat(input.value);
-    if (!isNaN(val) && val > maxTicket) { val = maxTicket; input.value = maxTicket; }
-    if (!isNaN(val) && val < 0)         { val = 0;         input.value = 0; }
-    state.remaining[id] = input.value;
+    // Remove decimals
+    let val = Math.floor(parseFloat(input.value));
+    if (isNaN(val)) { state.remaining[id] = ""; saveState(); updateScratchCard(id, state.scratchTypes.find(x=>x.id===id).faceValue, maxTicket); updateTotals(); return; }
+    if (val < 0) { val = 0; input.value = 0; }
+    if (val > maxTicket) { val = maxTicket; input.value = maxTicket; }
+    input.value = val;
+    state.remaining[id] = String(val);
+    saveState();
+    const t = state.scratchTypes.find(x => x.id === id);
+    updateScratchCard(id, t.faceValue, maxTicket);
+    updateTotals();
+  }
+
+  function stepScratch(id, delta, maxTicket) {
+    const current = parseInt(state.remaining[id] ?? -1);
+    let next;
+    if (current === -1 || isNaN(current)) {
+      next = delta > 0 ? 0 : 0;
+    } else {
+      next = current + delta;
+    }
+    if (next < 0) next = 0;
+    if (next > maxTicket) next = maxTicket;
+    state.remaining[id] = String(next);
     saveState();
     const t = state.scratchTypes.find(x => x.id === id);
     updateScratchCard(id, t.faceValue, maxTicket);
@@ -431,6 +458,7 @@
     const formulaEl = document.getElementById("formula-" + id);
     const resultEl = document.getElementById("result-" + id);
     const inputEl = document.getElementById("input-" + id);
+    const displayEl = inputEl;
 
     if (soldEl) {
       soldEl.textContent = fmt(soldValue);
@@ -442,7 +470,7 @@
     }
     if (formulaEl) formulaEl.textContent = (hasValue && !invalid) ? `300€ − (${ticketNum} × ${faceValue}€)` : "—";
     if (resultEl)  resultEl.textContent  = (hasValue && !invalid) ? fmt(soldValue) : "—";
-    if (inputEl)   inputEl.className = invalid ? "over-limit" : "";
+    if (displayEl) { displayEl.value = hasValue ? String(ticketNum) : ""; }
   }
 
   function onFixedInput(id, val) {
@@ -528,7 +556,9 @@
     state.remaining = {};
     state.fixedFields = state.fixedFields.map(f => ({ ...f, value: "" }));
     saveState();
-    render();
+    renderScratch();
+    renderFixed();
+    updateTotals();
     const btn = document.getElementById("clearBtn");
     btn.textContent = "✓ Καθαρίστηκε";
     btn.classList.add("cleared");
